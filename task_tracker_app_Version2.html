@@ -1,0 +1,1429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>⚡ NEXUS - Task Tracker AI</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        /* ==================== COLOR PALETTE ==================== */
+        :root {
+            --primary-cyan: #00d9ff;
+            --primary-purple: #a95b95;
+            --accent-pink: #ff006e;
+            --accent-lime: #39ff14;
+            --text-primary: #ffffff;
+            --text-secondary: #d7e7ff;
+            --bg-primary: #0a0e27;
+            --bg-secondary: #16213e;
+            --bg-tertiary: #1a1f3a;
+            --glass-bg: rgba(22, 33, 62, 0.4);
+            --neon-glow: rgba(0, 217, 255, 0.4);
+            --purple-glow: rgba(169, 91, 149, 0.3);
+        }
+
+        /* ==================== BASE STYLES ==================== */
+        body {
+            background: linear-gradient(135deg, #0a0e27 0%, #16213e 25%, #1a1f3a 50%, #0f3460 75%, #16213e 100%);
+            background-size: 400% 400%;
+            background-attachment: fixed;
+            color: var(--text-primary);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            line-height: 1.6;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* ==================== ANIMATED BACKGROUND ==================== */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 200%;
+            height: 200%;
+            background-image: 
+                radial-gradient(2px 2px at 20px 30px, #eee, rgba(0, 217, 255, 0.1)),
+                radial-gradient(2px 2px at 60px 70px, #fff, rgba(169, 91, 149, 0.1)),
+                radial-gradient(1px 1px at 50px 50px, #ddd, rgba(0, 217, 255, 0.05)),
+                radial-gradient(1px 1px at 130px 80px, #fff, rgba(169, 91, 149, 0.05)),
+                radial-gradient(2px 2px at 90px 10px, #eee, rgba(0, 217, 255, 0.1));
+            background-size: 200px 200px;
+            background-repeat: repeat;
+            animation: stars 30s linear infinite;
+            pointer-events: none;
+            opacity: 0.3;
+            z-index: 0;
+        }
+
+        @keyframes stars {
+            from { transform: translateY(0) translateX(0); }
+            to { transform: translateY(-200px) translateX(-200px); }
+        }
+
+        /* Grid overlay */
+        body::after {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(0deg, transparent 24%, rgba(0, 217, 255, 0.03) 25%, rgba(0, 217, 255, 0.03) 26%, transparent 27%, transparent 74%, rgba(0, 217, 255, 0.03) 75%, rgba(0, 217, 255, 0.03) 76%, transparent 77%),
+                linear-gradient(90deg, transparent 24%, rgba(0, 217, 255, 0.03) 25%, rgba(0, 217, 255, 0.03) 26%, transparent 27%, transparent 74%, rgba(0, 217, 255, 0.03) 75%, rgba(0, 217, 255, 0.03) 76%, transparent 77%);
+            background-size: 40px 40px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* Floating orbs background */
+        .floating-orbs {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            z-index: 0;
+            overflow: hidden;
+        }
+
+        .orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(100px);
+            animation: float 20s infinite ease-in-out;
+        }
+
+        .orb-1 {
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, rgba(0, 217, 255, 0.2) 0%, transparent 70%);
+            top: -50px;
+            left: -50px;
+            animation-duration: 25s;
+        }
+
+        .orb-2 {
+            width: 200px;
+            height: 200px;
+            background: radial-gradient(circle, rgba(169, 91, 149, 0.2) 0%, transparent 70%);
+            bottom: 50px;
+            right: 100px;
+            animation-duration: 30s;
+        }
+
+        .orb-3 {
+            width: 250px;
+            height: 250px;
+            background: radial-gradient(circle, rgba(57, 255, 20, 0.1) 0%, transparent 70%);
+            top: 50%;
+            right: -50px;
+            animation-duration: 35s;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            25% { transform: translate(20px, -20px) scale(1.1); }
+            50% { transform: translate(-20px, 20px) scale(0.9); }
+            75% { transform: translate(20px, 20px) scale(1.05); }
+        }
+
+        /* ==================== LAYOUT ==================== */
+        .page {
+            display: none;
+            position: relative;
+            z-index: 1;
+            min-height: 100vh;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* ==================== NAVIGATION ==================== */
+        .nav-bar {
+            background: rgba(10, 14, 39, 0.7);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(0, 217, 255, 0.2);
+            box-shadow: 0 8px 32px rgba(0, 217, 255, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 200;
+        }
+
+        .nav-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: 800;
+            color: var(--primary-cyan);
+            text-shadow: 0 0 20px var(--neon-glow);
+            letter-spacing: 2px;
+            font-family: 'Space Mono', monospace;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo-icon {
+            font-size: 28px;
+            animation: pulse-glow 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse-glow {
+            0%, 100% { text-shadow: 0 0 10px rgba(0, 217, 255, 0.5); }
+            50% { text-shadow: 0 0 30px rgba(0, 217, 255, 0.8); }
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 15px;
+        }
+
+        .nav-btn {
+            background: transparent;
+            border: 1.5px solid var(--primary-purple);
+            color: var(--primary-purple);
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .nav-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(169, 91, 149, 0.3), transparent);
+            transition: left 0.6s ease;
+        }
+
+        .nav-btn:hover::before {
+            left: 100%;
+        }
+
+        .nav-btn:hover {
+            background: rgba(169, 91, 149, 0.15);
+            border-color: var(--primary-purple);
+            box-shadow: 0 0 20px rgba(169, 91, 149, 0.4), inset 0 0 20px rgba(169, 91, 149, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .nav-btn.active {
+            background: linear-gradient(135deg, var(--primary-cyan), rgba(0, 217, 255, 0.8));
+            color: var(--bg-primary);
+            border-color: var(--primary-cyan);
+            box-shadow: 0 0 30px var(--neon-glow), inset 0 0 20px rgba(0, 217, 255, 0.2);
+        }
+
+        /* ==================== TYPOGRAPHY ==================== */
+        h1 {
+            font-size: 42px;
+            margin-bottom: 15px;
+            color: var(--primary-cyan);
+            text-shadow: 0 0 30px var(--neon-glow);
+            font-weight: 800;
+            letter-spacing: -1px;
+            background: linear-gradient(135deg, var(--primary-cyan), rgba(0, 217, 255, 0.7));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        h2 {
+            font-size: 26px;
+            margin-top: 35px;
+            margin-bottom: 25px;
+            color: var(--primary-cyan);
+            border-left: 4px solid var(--primary-purple);
+            padding-left: 15px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+
+        h3 {
+            color: var(--primary-cyan);
+            margin-top: 20px;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+
+        p {
+            color: var(--text-secondary);
+            font-weight: 300;
+        }
+
+        /* ==================== QUOTE SECTION ==================== */
+        .quote-section {
+            background: linear-gradient(135deg, rgba(169, 91, 149, 0.08), rgba(0, 217, 255, 0.08));
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(0, 217, 255, 0.2);
+            border-radius: 16px;
+            padding: 45px;
+            margin-bottom: 50px;
+            text-align: center;
+            box-shadow: 
+                0 8px 32px rgba(0, 217, 255, 0.1),
+                inset 0 1px 1px rgba(255, 255, 255, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .quote-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(0, 217, 255, 0.05), rgba(169, 91, 149, 0.05));
+            pointer-events: none;
+        }
+
+        .quote-text {
+            font-size: 28px;
+            color: var(--primary-purple);
+            font-style: italic;
+            margin: 0;
+            font-weight: 600;
+            text-shadow: 0 0 20px rgba(169, 91, 149, 0.3);
+            position: relative;
+            z-index: 1;
+            line-height: 1.8;
+        }
+
+        .quote-author {
+            color: var(--primary-cyan);
+            margin-top: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* ==================== TABLES ==================== */
+        .table-container {
+            background: linear-gradient(135deg, rgba(22, 33, 62, 0.4), rgba(26, 31, 58, 0.4));
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(0, 217, 255, 0.15);
+            border-radius: 16px;
+            overflow: hidden;
+            margin-bottom: 35px;
+            box-shadow: 
+                0 8px 32px rgba(0, 217, 255, 0.08),
+                inset 0 1px 1px rgba(255, 255, 255, 0.05);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            background: linear-gradient(90deg, rgba(0, 217, 255, 0.1), rgba(169, 91, 149, 0.1));
+            border-bottom: 2px solid rgba(0, 217, 255, 0.2);
+            padding: 18px 20px;
+            text-align: left;
+            font-weight: 700;
+            color: var(--primary-cyan);
+            letter-spacing: 0.5px;
+            font-size: 13px;
+            text-transform: uppercase;
+        }
+
+        td {
+            padding: 16px 20px;
+            border-bottom: 1px solid rgba(0, 217, 255, 0.08);
+            color: var(--text-secondary);
+        }
+
+        tr {
+            transition: all 0.3s ease;
+        }
+
+        tbody tr:hover {
+            background: rgba(0, 217, 255, 0.08);
+            box-shadow: inset 0 0 15px rgba(0, 217, 255, 0.08);
+        }
+
+        /* ==================== CHECKBOXES ==================== */
+        .checkbox-custom {
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+            accent-color: var(--primary-cyan);
+            transition: all 0.3s ease;
+        }
+
+        .checkbox-custom:hover {
+            filter: drop-shadow(0 0 8px var(--neon-glow));
+            transform: scale(1.1);
+        }
+
+        .day-checkbox {
+            width: 32px;
+            height: 32px;
+            cursor: pointer;
+            accent-color: var(--primary-cyan);
+            margin: 4px;
+            transition: all 0.2s ease;
+        }
+
+        .day-checkbox:hover {
+            filter: drop-shadow(0 0 6px var(--neon-glow));
+            transform: scale(1.15);
+        }
+
+        .day-checkbox:checked {
+            filter: drop-shadow(0 0 10px var(--neon-glow));
+        }
+
+        /* ==================== INPUT FIELDS ==================== */
+        input[type="text"],
+        input[type="number"] {
+            background: rgba(30, 35, 55, 0.6);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(0, 217, 255, 0.3);
+            color: var(--text-primary);
+            padding: 12px 16px;
+            border-radius: 10px;
+            font-size: 14px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            font-family: 'Inter', sans-serif;
+            letter-spacing: 0.3px;
+        }
+
+        input[type="text"]::placeholder,
+        input[type="number"]::placeholder {
+            color: rgba(215, 231, 255, 0.4);
+        }
+
+        input[type="text"]:focus,
+        input[type="number"]:focus {
+            outline: none;
+            border-color: var(--primary-cyan);
+            background: rgba(30, 35, 55, 0.8);
+            box-shadow: 
+                0 0 20px rgba(0, 217, 255, 0.3),
+                inset 0 0 10px rgba(0, 217, 255, 0.1);
+        }
+
+        /* ==================== BUTTONS ==================== */
+        .btn {
+            background: linear-gradient(135deg, var(--primary-cyan), #00a8cc);
+            color: var(--bg-primary);
+            border: none;
+            padding: 12px 28px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 700;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 0 20px rgba(0, 217, 255, 0.4);
+            letter-spacing: 0.5px;
+            font-size: 14px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .btn:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .btn:hover {
+            box-shadow: 0 0 40px rgba(0, 217, 255, 0.6);
+            transform: translateY(-3px);
+        }
+
+        .btn:active {
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, var(--primary-purple), #8b4a7d);
+            color: white;
+            box-shadow: 0 0 20px rgba(169, 91, 149, 0.4);
+        }
+
+        .btn-secondary:hover {
+            box-shadow: 0 0 40px rgba(169, 91, 149, 0.6);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a6f);
+            color: white;
+            padding: 8px 14px;
+            font-size: 12px;
+            box-shadow: 0 0 15px rgba(255, 107, 107, 0.4);
+        }
+
+        .btn-danger:hover {
+            box-shadow: 0 0 25px rgba(255, 107, 107, 0.6);
+        }
+
+        /* ==================== INPUT GROUPS ==================== */
+        .input-group {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+        }
+
+        .input-group input {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .input-group button {
+            flex-shrink: 0;
+        }
+
+        /* ==================== STATS CARDS ==================== */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 25px;
+            margin-bottom: 45px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, rgba(0, 217, 255, 0.05), rgba(169, 91, 149, 0.05));
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(0, 217, 255, 0.2);
+            border-radius: 16px;
+            padding: 30px;
+            text-align: center;
+            box-shadow: 
+                0 8px 32px rgba(0, 217, 255, 0.1),
+                inset 0 1px 1px rgba(255, 255, 255, 0.05);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, rgba(0, 217, 255, 0.1), transparent);
+            pointer-events: none;
+        }
+
+        .stat-card:hover {
+            box-shadow: 
+                0 15px 40px rgba(0, 217, 255, 0.2),
+                inset 0 1px 1px rgba(255, 255, 255, 0.1);
+            transform: translateY(-8px);
+            border-color: rgba(0, 217, 255, 0.4);
+        }
+
+        .stat-value {
+            font-size: 56px;
+            font-weight: 800;
+            color: var(--primary-cyan);
+            margin: 20px 0;
+            text-shadow: 0 0 30px rgba(0, 217, 255, 0.4);
+            font-family: 'Space Mono', monospace;
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            font-weight: 600;
+        }
+
+        /* ==================== CHART CONTAINER ==================== */
+        .chart-container {
+            background: linear-gradient(135deg, rgba(22, 33, 62, 0.4), rgba(26, 31, 58, 0.4));
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(0, 217, 255, 0.15);
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 35px;
+            box-shadow: 
+                0 8px 32px rgba(0, 217, 255, 0.08),
+                inset 0 1px 1px rgba(255, 255, 255, 0.05);
+            position: relative;
+        }
+
+        .chart-wrapper {
+            position: relative;
+            height: 420px;
+            margin-bottom: 20px;
+        }
+
+        /* ==================== METRICS ==================== */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 18px;
+            margin-bottom: 30px;
+        }
+
+        .metric-box {
+            background: rgba(30, 35, 55, 0.6);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(0, 217, 255, 0.2);
+            border-radius: 12px;
+            padding: 22px;
+            text-align: center;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .metric-box::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0, 217, 255, 0.1), transparent);
+            transition: left 0.6s ease;
+        }
+
+        .metric-box:hover {
+            border-color: var(--primary-cyan);
+            box-shadow: 0 0 20px rgba(0, 217, 255, 0.2);
+            transform: translateY(-4px);
+        }
+
+        .metric-box:hover::before {
+            left: 100%;
+        }
+
+        .metric-target {
+            color: var(--primary-purple);
+            font-size: 11px;
+            margin-bottom: 12px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .metric-value {
+            color: var(--primary-cyan);
+            font-size: 36px;
+            font-weight: 800;
+            margin-bottom: 12px;
+            text-shadow: 0 0 15px rgba(0, 217, 255, 0.3);
+            font-family: 'Space Mono', monospace;
+        }
+
+        .metric-label {
+            color: var(--text-secondary);
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+        }
+
+        /* ==================== HISTORY SECTION ==================== */
+        .history-item {
+            background: linear-gradient(135deg, rgba(22, 33, 62, 0.4), rgba(26, 31, 58, 0.4));
+            backdrop-filter: blur(15px);
+            border-left: 4px solid var(--primary-cyan);
+            border: 1px solid rgba(0, 217, 255, 0.15);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .history-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0, 217, 255, 0.08), transparent);
+            transition: left 0.6s ease;
+        }
+
+        .history-item:hover {
+            background: linear-gradient(135deg, rgba(22, 33, 62, 0.6), rgba(26, 31, 58, 0.6));
+            box-shadow: 0 0 25px rgba(0, 217, 255, 0.15);
+            transform: translateX(8px);
+            border-left-color: var(--primary-purple);
+        }
+
+        .history-date {
+            color: var(--primary-cyan);
+            font-weight: 700;
+            margin-bottom: 8px;
+            font-size: 15px;
+            letter-spacing: 0.5px;
+        }
+
+        .history-details {
+            display: none;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid rgba(0, 217, 255, 0.1);
+        }
+
+        .history-item.expanded .history-details {
+            display: block;
+        }
+
+        .detail-item {
+            color: var(--text-secondary);
+            font-size: 13px;
+            margin: 8px 0;
+            padding-left: 15px;
+            position: relative;
+        }
+
+        .detail-item::before {
+            content: '→';
+            position: absolute;
+            left: 0;
+            color: var(--primary-purple);
+            font-weight: 700;
+        }
+
+        .detail-item.completed {
+            color: var(--primary-cyan);
+        }
+
+        .detail-item.completed::before {
+            content: '✓';
+            color: var(--accent-lime);
+        }
+
+        /* ==================== RESPONSIVE ==================== */
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 28px;
+            }
+
+            h2 {
+                font-size: 20px;
+            }
+
+            .container {
+                padding: 20px 15px;
+            }
+
+            .table-container {
+                overflow-x: auto;
+            }
+
+            table {
+                font-size: 13px;
+            }
+
+            td, th {
+                padding: 12px 8px;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .chart-wrapper {
+                height: 300px;
+            }
+
+            .nav-links {
+                gap: 8px;
+            }
+
+            .nav-btn {
+                padding: 8px 12px;
+                font-size: 11px;
+            }
+
+            .logo {
+                font-size: 18px;
+            }
+
+            .quote-section {
+                padding: 25px;
+            }
+
+            .quote-text {
+                font-size: 18px;
+            }
+        }
+
+        /* ==================== SCROLLBAR ==================== */
+        ::-webkit-scrollbar {
+            width: 12px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 217, 255, 0.05);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg, var(--primary-cyan), var(--primary-purple));
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(180deg, var(--primary-purple), var(--primary-cyan));
+        }
+
+        /* ==================== ANIMATIONS ==================== */
+        .fade-in {
+            animation: fadeIn 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .slide-in {
+            animation: slideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        /* Loading spinner */
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(0, 217, 255, 0.3);
+            border-top-color: var(--primary-cyan);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <!-- Animated Background -->
+    <div class="floating-orbs">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="nav-bar">
+        <div class="nav-content">
+            <div class="logo">
+                <span class="logo-icon">⚡</span>
+                <span>NEXUS</span>
+            </div>
+            <div class="nav-links">
+                <button class="nav-btn active" onclick="switchPage('daily')">📋 Tracker</button>
+                <button class="nav-btn" onclick="switchPage('analytics')">📊 Analytics</button>
+                <button class="nav-btn" onclick="switchPage('history')">📚 Archive</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- PAGE 1: DAILY TRACKER -->
+    <div class="page active" id="page-daily">
+        <div class="container fade-in">
+            <h1>⚡ Daily Task Tracker</h1>
+
+            <!-- Motivational Quote -->
+            <div class="quote-section">
+                <p class="quote-text" id="quoteText">"The only impossible journey is the one you never begin."</p>
+                <div class="quote-author" id="quoteAuthor">— Unknown</div>
+            </div>
+
+            <!-- HABITS TRACKER -->
+            <h2>🎯 Long-Term Habits Tracker</h2>
+            <div class="input-group">
+                <input type="text" id="habitInput" placeholder="Enter your daily habit...">
+                <button class="btn" onclick="addHabit()">+ Add Habit</button>
+            </div>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Habit Name</th>
+                            <th>Daily Progress (30 Days)</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="habitsTable"></tbody>
+                </table>
+            </div>
+
+            <!-- DAILY TASKS TRACKER -->
+            <h2>✓ Daily Tasks Tracker</h2>
+            <div class="input-group">
+                <input type="text" id="taskInput" placeholder="Enter your task...">
+                <button class="btn" onclick="addTask()">+ Add Task</button>
+            </div>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Task Description</th>
+                            <th>Status</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="tasksTable"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- PAGE 2: ANALYTICS -->
+    <div class="page" id="page-analytics">
+        <div class="container fade-in">
+            <h1>📊 Performance Analytics</h1>
+
+            <!-- Stats Section -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-label">Completion Rate</div>
+                    <div class="stat-value" id="completionRate">0%</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Habits Maintained</div>
+                    <div class="stat-value" id="habitsMaintained">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Days Tracked</div>
+                    <div class="stat-value" id="daysTracked">0</div>
+                </div>
+            </div>
+
+            <!-- Task Completion Chart -->
+            <h2>Task Completion Rate</h2>
+            <div class="chart-container">
+                <div class="chart-wrapper">
+                    <canvas id="taskCompletionChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Daily Progress Trend -->
+            <h2>Daily Progress Trend</h2>
+            <div class="chart-container">
+                <div class="chart-wrapper">
+                    <canvas id="progressTrendChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Improvement Metrics -->
+            <h2>Improvement Metrics</h2>
+            <div class="metrics-grid">
+                <div class="metric-box">
+                    <div class="metric-target">Target: +15%</div>
+                    <div class="metric-value" id="efficiencyBoost">0%</div>
+                    <div class="metric-label">Efficiency Boost</div>
+                </div>
+                <div class="metric-box">
+                    <div class="metric-target">Target: 90%</div>
+                    <div class="metric-value" id="habitConsistency">0%</div>
+                    <div class="metric-label">Habit Consistency</div>
+                </div>
+                <div class="metric-box">
+                    <div class="metric-target">Target: +2 hours</div>
+                    <div class="metric-value" id="focusTimeDisplay">0h</div>
+                    <div class="metric-label">Focus Time</div>
+                    <input type="number" id="focusTimeInput" min="0" max="24" placeholder="Hours" style="width: 85%; margin-top: 12px; margin-left: auto; margin-right: auto; display: block;" onchange="saveFocusTime()">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PAGE 3: HISTORY -->
+    <div class="page" id="page-history">
+        <div class="container fade-in">
+            <h1>📚 Task History & Archive</h1>
+
+            <!-- Daily History -->
+            <h2>Daily Task History</h2>
+            <div id="dailyHistory"></div>
+
+            <!-- Monthly Archive -->
+            <h2>Monthly Archive</h2>
+            <div id="monthlyArchive"></div>
+        </div>
+    </div>
+
+    <script>
+        // ==================== APP DATA ====================
+        let appData = {
+            tasks: [],
+            habits: [],
+            dailyData: {},
+            focusTime: 0
+        };
+
+        const QUOTES = [
+            { text: "The only way to do great work is to love what you do.", author: "Steve Jobs" },
+            { text: "Your limitation is only your imagination.", author: "Unknown" },
+            { text: "Progress, not perfection.", author: "Unknown" },
+            { text: "Small steps every day lead to big changes.", author: "Unknown" },
+            { text: "You don't rise to the level of your goals, you fall to the level of your systems.", author: "James Clear" },
+            { text: "The future is created by what you do today.", author: "Unknown" },
+            { text: "Success is the sum of small efforts repeated day in and day out.", author: "Robert Collier" },
+            { text: "Discipline is choosing what you want most over what you want now.", author: "Unknown" },
+            { text: "Every expert was once a beginner.", author: "Unknown" },
+            { text: "Believe you can and you're halfway there.", author: "Theodore Roosevelt" },
+        ];
+
+        // ==================== INITIALIZATION ====================
+        document.addEventListener('DOMContentLoaded', () => {
+            loadData();
+            loadQuote();
+            renderDailyTracker();
+            renderAnalytics();
+            renderHistory();
+            setInterval(loadQuote, 60000);
+        });
+
+        // ==================== DATA MANAGEMENT ====================
+        function loadData() {
+            const saved = localStorage.getItem('taskTrackerData');
+            if (saved) {
+                appData = JSON.parse(saved);
+            } else {
+                initializeDefaultData();
+            }
+        }
+
+        function initializeDefaultData() {
+            appData = {
+                tasks: [
+                    { id: 1, name: '🌅 Morning Exercise', completed: false, createdAt: new Date().toISOString() },
+                    { id: 2, name: '📖 Review Daily Goals', completed: false, createdAt: new Date().toISOString() },
+                    { id: 3, name: '💻 Deep Work Session', completed: false, createdAt: new Date().toISOString() },
+                    { id: 4, name: '🔄 Code Review', completed: false, createdAt: new Date().toISOString() },
+                    { id: 5, name: '🧘 Meditation', completed: false, createdAt: new Date().toISOString() }
+                ],
+                habits: [
+                    { id: 1, name: '⏰ Morning Routine', days: {}, createdAt: new Date().toISOString() },
+                    { id: 2, name: '💪 Fitness', days: {}, createdAt: new Date().toISOString() },
+                    { id: 3, name: '📚 Reading', days: {}, createdAt: new Date().toISOString() },
+                    { id: 4, name: '🔧 Learning', days: {}, createdAt: new Date().toISOString() },
+                    { id: 5, name: '💧 Hydration', days: {}, createdAt: new Date().toISOString() }
+                ],
+                dailyData: {},
+                focusTime: 0
+            };
+            saveData();
+        }
+
+        function saveData() {
+            localStorage.setItem('taskTrackerData', JSON.stringify(appData));
+            renderDailyTracker();
+            renderAnalytics();
+            renderHistory();
+        }
+
+        // ==================== QUOTE MANAGEMENT ====================
+        function loadQuote() {
+            const quote = QUOTES[Math.floor(Math.random() * QUOTES.length)];
+            document.getElementById('quoteText').textContent = `"${quote.text}"`;
+            document.getElementById('quoteAuthor').textContent = `— ${quote.author}`;
+        }
+
+        // ==================== PAGE NAVIGATION ====================
+        function switchPage(page) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.getElementById(`page-${page}`).classList.add('active');
+
+            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+
+            if (page === 'analytics') {
+                setTimeout(initializeCharts, 100);
+            }
+        }
+
+        // ==================== TASK FUNCTIONS ====================
+        function addTask() {
+            const input = document.getElementById('taskInput');
+            if (input.value.trim()) {
+                const newTask = {
+                    id: Date.now(),
+                    name: input.value,
+                    completed: false,
+                    createdAt: new Date().toISOString()
+                };
+                appData.tasks.push(newTask);
+                input.value = '';
+                saveData();
+            }
+        }
+
+        function toggleTask(taskId) {
+            const task = appData.tasks.find(t => t.id === taskId);
+            if (task) {
+                task.completed = !task.completed;
+                saveData();
+            }
+        }
+
+        function deleteTask(taskId) {
+            appData.tasks = appData.tasks.filter(t => t.id !== taskId);
+            saveData();
+        }
+
+        function editTask(taskId) {
+            const task = appData.tasks.find(t => t.id === taskId);
+            if (task) {
+                const newName = prompt('Edit task:', task.name);
+                if (newName && newName.trim()) {
+                    task.name = newName;
+                    saveData();
+                }
+            }
+        }
+
+        // ==================== HABIT FUNCTIONS ====================
+        function addHabit() {
+            const input = document.getElementById('habitInput');
+            if (input.value.trim()) {
+                const newHabit = {
+                    id: Date.now(),
+                    name: input.value,
+                    days: {},
+                    createdAt: new Date().toISOString()
+                };
+                appData.habits.push(newHabit);
+                input.value = '';
+                saveData();
+            }
+        }
+
+        function toggleHabitDay(habitId, day) {
+            const habit = appData.habits.find(h => h.id === habitId);
+            if (habit) {
+                habit.days[day] = !habit.days[day];
+                saveData();
+            }
+        }
+
+        function deleteHabit(habitId) {
+            appData.habits = appData.habits.filter(h => h.id !== habitId);
+            saveData();
+        }
+
+        function editHabit(habitId) {
+            const habit = appData.habits.find(h => h.id === habitId);
+            if (habit) {
+                const newName = prompt('Edit habit:', habit.name);
+                if (newName && newName.trim()) {
+                    habit.name = newName;
+                    saveData();
+                }
+            }
+        }
+
+        // ==================== RENDER FUNCTIONS ====================
+        function renderDailyTracker() {
+            // Render Tasks
+            const tasksTable = document.getElementById('tasksTable');
+            tasksTable.innerHTML = appData.tasks.map(task => `
+                <tr>
+                    <td>
+                        <span onclick="editTask(${task.id})" style="cursor: pointer; color: #00d9ff; transition: all 0.3s; font-weight: 500;">
+                            ${task.name}
+                        </span>
+                    </td>
+                    <td style="text-align: center;">
+                        <input type="checkbox" class="checkbox-custom" ${task.completed ? 'checked' : ''} 
+                               onchange="toggleTask(${task.id})">
+                    </td>
+                    <td style="text-align: center;">
+                        <button class="btn-danger" onclick="deleteTask(${task.id})">✕</button>
+                    </td>
+                </tr>
+            `).join('');
+
+            // Render Habits
+            const habitsTable = document.getElementById('habitsTable');
+            const today = new Date();
+            const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+            
+            habitsTable.innerHTML = appData.habits.map(habit => {
+                let dayBoxes = '';
+                for (let day = 1; day <= daysInMonth; day++) {
+                    const isChecked = habit.days[day] ? 'checked' : '';
+                    dayBoxes += `
+                        <input type="checkbox" class="day-checkbox" ${isChecked}
+                               onchange="toggleHabitDay(${habit.id}, ${day})"
+                               title="Day ${day}">
+                    `;
+                }
+                return `
+                    <tr>
+                        <td>
+                            <span onclick="editHabit(${habit.id})" style="cursor: pointer; color: #00d9ff; transition: all 0.3s; font-weight: 500;">
+                                ${habit.name}
+                            </span>
+                        </td>
+                        <td style="overflow-x: auto; display: flex; gap: 3px; flex-wrap: wrap;">
+                            ${dayBoxes}
+                        </td>
+                        <td style="text-align: center;">
+                            <button class="btn-danger" onclick="deleteHabit(${habit.id})">✕</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // ==================== ANALYTICS ====================
+        function calculateStats() {
+            const totalTasks = appData.tasks.length;
+            const completedTasks = appData.tasks.filter(t => t.completed).length;
+            const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+
+            const habitsMaintained = appData.habits.filter(h => Object.values(h.days).some(v => v)).length;
+            const daysTracked = Object.keys(appData.dailyData).length;
+
+            return { completionRate, habitsMaintained, daysTracked, completedTasks, totalTasks };
+        }
+
+        function renderAnalytics() {
+            const stats = calculateStats();
+            document.getElementById('completionRate').textContent = stats.completionRate + '%';
+            document.getElementById('habitsMaintained').textContent = stats.habitsMaintained;
+            document.getElementById('daysTracked').textContent = stats.daysTracked;
+
+            document.getElementById('efficiencyBoost').textContent = Math.min(stats.completionRate, 15) + '%';
+            document.getElementById('habitConsistency').textContent = stats.habitsMaintained > 0 
+                ? Math.min((stats.habitsMaintained / appData.habits.length) * 100, 90).toFixed(0) + '%'
+                : '0%';
+            
+            const focusTime = appData.focusTime || 0;
+            document.getElementById('focusTimeDisplay').textContent = focusTime + 'h';
+            document.getElementById('focusTimeInput').value = focusTime;
+        }
+
+        function saveFocusTime() {
+            appData.focusTime = parseInt(document.getElementById('focusTimeInput').value) || 0;
+            saveData();
+        }
+
+        function initializeCharts() {
+            const stats = calculateStats();
+
+            // Task Completion Pie Chart
+            const pieCtx = document.getElementById('taskCompletionChart');
+            if (pieCtx.chart) pieCtx.chart.destroy();
+            
+            pieCtx.chart = new Chart(pieCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Completed', 'Remaining'],
+                    datasets: [{
+                        data: [stats.completedTasks, stats.totalTasks - stats.completedTasks],
+                        backgroundColor: ['#00d9ff', '#a95b95'],
+                        borderColor: ['#00d9ff', '#a95b95'],
+                        borderWidth: 2,
+                        hoverOffset: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: { color: '#d7e7ff', font: { size: 13, weight: '600' }, padding: 20 }
+                        }
+                    }
+                }
+            });
+
+            // Daily Progress Trend
+            const trendCtx = document.getElementById('progressTrendChart');
+            if (trendCtx.chart) trendCtx.chart.destroy();
+
+            const progressData = Array(30).fill(0).map((_, i) => {
+                const date = new Date();
+                date.setDate(date.getDate() - (29 - i));
+                const dateStr = date.toISOString().split('T')[0];
+                return appData.dailyData[dateStr]?.tasks?.length || 0;
+            });
+
+            trendCtx.chart = new Chart(trendCtx, {
+                type: 'line',
+                data: {
+                    labels: Array(30).fill(0).map((_, i) => `D${i + 1}`),
+                    datasets: [{
+                        label: 'Tasks Completed',
+                        data: progressData,
+                        borderColor: '#00d9ff',
+                        backgroundColor: 'rgba(0, 217, 255, 0.08)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 6,
+                        pointBackgroundColor: '#00d9ff',
+                        pointBorderColor: '#a95b95',
+                        pointBorderWidth: 2,
+                        pointHoverRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: { color: '#d7e7ff', font: { size: 13, weight: '600' }, padding: 20 }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            ticks: { color: '#d7e7ff', font: { size: 12 } },
+                            grid: { color: 'rgba(0, 217, 255, 0.1)' }
+                        },
+                        x: {
+                            ticks: { color: '#d7e7ff', font: { size: 12 } },
+                            grid: { color: 'rgba(0, 217, 255, 0.1)' }
+                        }
+                    }
+                }
+            });
+        }
+
+        // ==================== HISTORY & ARCHIVE ====================
+        function renderHistory() {
+            // Daily History
+            const dailyHistoryDiv = document.getElementById('dailyHistory');
+            const dateSet = new Set(Object.keys(appData.dailyData));
+            const sortedDates = Array.from(dateSet).sort().reverse().slice(0, 30);
+
+            dailyHistoryDiv.innerHTML = sortedDates.map(date => {
+                const dayData = appData.dailyData[date] || { tasks: [], habits: [] };
+                const dateObj = new Date(date);
+                const formattedDate = dateObj.toLocaleDateString('en-US', { 
+                    weekday: 'short', 
+                    year: 'numeric', 
+                    month: 'short', 
+                    day: 'numeric' 
+                });
+
+                return `
+                    <div class="history-item" onclick="this.classList.toggle('expanded')">
+                        <div class="history-date">${formattedDate}</div>
+                        <div class="history-details">
+                            <strong style="color: #00d9ff;">Tasks:</strong>
+                            ${dayData.tasks.length > 0 ? dayData.tasks.map(t => `<div class="detail-item completed">✓ ${t}</div>`).join('') : '<div class="detail-item">No tasks</div>'}
+                            <strong style="margin-top: 12px; display: block; color: #00d9ff;">Habits:</strong>
+                            ${dayData.habits.length > 0 ? dayData.habits.map(h => `<div class="detail-item completed">✓ ${h}</div>`).join('') : '<div class="detail-item">No habits</div>'}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            // Monthly Archive
+            const monthlyArchiveDiv = document.getElementById('monthlyArchive');
+            const monthData = {};
+            
+            Object.entries(appData.dailyData).forEach(([date, data]) => {
+                const month = date.substring(0, 7);
+                if (!monthData[month]) {
+                    monthData[month] = { tasks: 0, habits: 0, days: 0 };
+                }
+                monthData[month].tasks += data.tasks?.length || 0;
+                monthData[month].habits += data.habits?.length || 0;
+                monthData[month].days += 1;
+            });
+
+            monthlyArchiveDiv.innerHTML = Object.entries(monthData)
+                .sort()
+                .reverse()
+                .map(([month, data]) => {
+                    const [year, monthNum] = month.split('-');
+                    const monthName = new Date(year, monthNum - 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+                    const totalItems = data.tasks + data.habits;
+                    const percentage = totalItems > 0 ? ((totalItems / (data.days * 10)) * 100).toFixed(1) : 0;
+
+                    return `
+                        <div class="history-item" onclick="this.classList.toggle('expanded')">
+                            <div class="history-date">${monthName}</div>
+                            <div class="history-details">
+                                <div class="detail-item">📋 Long-term Habits: ${data.habits}</div>
+                                <div class="detail-item">✓ Daily Tasks: ${data.tasks}</div>
+                                <div class="detail-item completed">📊 Completion: ${percentage}%</div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+        }
+    </script>
+</body>
+</html>
